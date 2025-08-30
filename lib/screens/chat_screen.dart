@@ -149,7 +149,7 @@ child: blob(220, cs.primary.withOpacity(0.18)),
 ),
 ),
 Positioned(
-bottom: -70,
+bottom: -70, 
 right: -50,
 child: Hero(
 tag: 'lfblob',
