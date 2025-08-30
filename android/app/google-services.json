@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "430959121199",
+    "project_id": "rootx-software",
+    "storage_bucket": "rootx-software.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:430959121199:android:d11a4b9d2aa4e7c441c7da",
+        "android_client_info": {
+          "package_name": "com.example.rootx_software"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "430959121199-sj3pear2eg86mmp9srrepupfl2qir3mt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB216cEutoFZm6CQ0umYDkHmd7w_EDryo0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "430959121199-sj3pear2eg86mmp9srrepupfl2qir3mt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
