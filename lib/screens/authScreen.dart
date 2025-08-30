@@ -95,7 +95,7 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
       body: Stack(
         children: [
-          // Background gradient + shapes
+          // Background gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -105,15 +105,29 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
           ),
-          Positioned(
-            top: -80,
-            right: -60,
-            child: _blob(220, cs.primary.withOpacity(0.18)),
+
+          // Animated blobs (no Hero, no ParentData errors)
+          Positioned.fill(
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOutCubicEmphasized,
+              alignment: _isRegister ? Alignment.topRight : Alignment.topLeft,
+              child: Transform.translate(
+                offset: _isRegister ? const Offset(60, -80) : const Offset(-60, -80),
+                child: _blob(220, cs.primary.withOpacity(0.18)),
+              ),
+            ),
           ),
-          Positioned(
-            bottom: -70,
-            left: -50,
-            child: _blob(200, cs.secondary.withOpacity(0.16)),
+          Positioned.fill(
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOutCubicEmphasized,
+              alignment: _isRegister ? Alignment.bottomLeft : Alignment.bottomRight,
+              child: Transform.translate(
+                offset: _isRegister ? const Offset(-50, 70) : const Offset(60, 70),
+                child: _blob(200, cs.secondary.withOpacity(0.16)),
+              ),
+            ),
           ),
 
           // Content
@@ -269,26 +283,6 @@ class _SignInScreenState extends State<SignInScreen> {
                                           child: const Text('Forgot password?'),
                                         ),
                                     ],
-                                  ),
-
-                                  const Divider(height: 24),
-                                  // Google sign-in
-                                  _GoogleButton(
-                                    onPressed: _loading
-                                        ? null
-                                        : () async {
-                                            setState(() {
-                                              _loading = true;
-                                              _error = null;
-                                            });
-                                            try {
-                                              await auth.signInWithGoogle();
-                                            } catch (e) {
-                                              setState(() => _error = e.toString());
-                                            } finally {
-                                              if (mounted) setState(() => _loading = false);
-                                            }
-                                          },
                                   ),
                                 ],
                               ),

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -50,20 +51,64 @@ class _ChatScreenState extends State<ChatScreen> {
     final chat = context.read<ChatService>();
     final cs = Theme.of(context).colorScheme;
 
-    Widget gradientAppBarBackground() {
+    Widget gradientBackground() {
       return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [cs.primary.withOpacity(0.14), cs.secondary.withOpacity(0.08)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [
+              cs.primary.withOpacity(0.10),
+              cs.secondary.withOpacity(0.08),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      );
+    }
+
+    Widget blob(double size, Color color, {Alignment align = Alignment.center}) {
+      return Align(
+        alignment: align,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.35),
+                blurRadius: 40,
+                spreadRadius: 10,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget frosted({required Widget child, double radius = 16, EdgeInsets? padding}) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: padding ?? const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.surface.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+            ),
+            child: child,
           ),
         ),
       );
     }
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        flexibleSpace: gradientAppBarBackground(),
+        backgroundColor: Colors.transparent,
         titleSpacing: 0,
         title: Row(
           children: [
@@ -75,11 +120,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 backgroundColor: widget.avatarColor ?? cs.primary,
                 child: Text(
                   widget.peerName.isNotEmpty ? widget.peerName[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 widget.peerName,
@@ -91,68 +136,95 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: StreamBuilder<List<Message>>(
-              stream: chat.messagesStream(widget.chatId),
-              builder: (_, snap) {
-                if (!snap.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final msgs = snap.data!;
-                if (msgs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Say hi 👋',
-                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 16),
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  itemCount: msgs.length,
-                  itemBuilder: (_, i) {
-                    final m = msgs[i];
-                    final isMe = m.fromId == me.uid;
-                    final showHeader = i == 0 || !_isSameDay(m.createdAt, msgs[i - 1].createdAt);
+          // Background
+          gradientBackground(),
+          Positioned(
+top: -80,
+left: -60,
+child: Hero(
+tag: 'riblob',
+child: blob(220, cs.primary.withOpacity(0.18)),
+),
+),
+Positioned(
+bottom: -70,
+right: -50,
+child: Hero(
+tag: 'lfblob',
+child: blob(200, cs.secondary.withOpacity(0.16)),
+),
+),
 
-                    final bubble = _MessageBubble(
-                      text: m.text ?? '',
-                      isMe: isMe,
-                      time: DateFormat.jm().format(m.createdAt.toDate()),
-                    );
+          // Content
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: StreamBuilder<List<Message>>(
+                    stream: chat.messagesStream(widget.chatId),
+                    builder: (_, snap) {
+                      if (!snap.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final msgs = snap.data!;
+                      if (msgs.isEmpty) {
+                        return Center(
+                          child: frosted(
+                            child: const Text('Say hi 👋', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          ),
+                        );
+                      }
+                      return ListView.builder(
+                        reverse: true,
+                        padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+                        itemCount: msgs.length,
+                        itemBuilder: (_, i) {
+                          final m = msgs[i];
+                          final isMe = m.fromId == me.uid;
+                          final showHeader = i == 0 || !_isSameDay(m.createdAt, msgs[i - 1].createdAt);
 
-                    if (showHeader) {
-                      return Column(
-                        children: [
-                          const SizedBox(height: 6),
-                          _DateChip(label: _dateLabel(m.createdAt.toDate())),
-                          const SizedBox(height: 8),
-                          bubble,
-                        ],
+                          final bubble = _MessageBubble(
+                            text: m.text ?? '',
+                            isMe: isMe,
+                            time: DateFormat.jm().format(m.createdAt.toDate()),
+                            cs: cs,
+                          );
+
+                          if (showHeader) {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 6),
+                                _DateChip(label: _dateLabel(m.createdAt.toDate()), cs: cs),
+                                const SizedBox(height: 8),
+                                bubble,
+                              ],
+                            );
+                          }
+                          return bubble;
+                        },
                       );
-                    }
-                    return bubble;
+                    },
+                  ),
+                ),
+                _Composer(
+                  controller: _ctrl,
+                  cs: cs,
+                  onSend: () async {
+                    final text = _ctrl.text.trim();
+                    if (text.isEmpty) return;
+                    _ctrl.clear();
+                    await chat.sendText(
+                      chatId: widget.chatId,
+                      fromId: me.uid,
+                      toId: widget.peerId,
+                      text: text,
+                    );
                   },
-                );
-              },
+                ),
+              ],
             ),
-          ),
-          _Composer(
-            controller: _ctrl,
-            onSend: () async {
-              final text = _ctrl.text.trim();
-              if (text.isEmpty) return;
-              _ctrl.clear();
-              await chat.sendText(
-                chatId: widget.chatId,
-                fromId: FirebaseAuth.instance.currentUser!.uid,
-                toId: widget.peerId,
-                text: text,
-              );
-            },
           ),
         ],
       ),
@@ -162,18 +234,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
 class _DateChip extends StatelessWidget {
   final String label;
-  const _DateChip({required this.label});
+  final ColorScheme cs;
+  const _DateChip({required this.label, required this.cs});
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: cs.surfaceVariant.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: cs.surface.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ),
       ),
-      child: Text(label, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -182,21 +263,18 @@ class _MessageBubble extends StatelessWidget {
   final String text;
   final bool isMe;
   final String time;
+  final ColorScheme cs;
 
   const _MessageBubble({
     required this.text,
     required this.isMe,
     required this.time,
+    required this.cs,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    final bg = isMe
-        ? null
-        : cs.surfaceVariant.withOpacity(0.7);
-
+    final bg = isMe ? null : cs.surface.withOpacity(0.6);
     final gradient = isMe
         ? LinearGradient(
             colors: [cs.primary, cs.primaryContainer],
@@ -204,67 +282,76 @@ class _MessageBubble extends StatelessWidget {
             end: Alignment.bottomRight,
           )
         : null;
-
     final txtColor = isMe ? Colors.white : cs.onSurface;
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          decoration: BoxDecoration(
-            color: bg,
-            gradient: gradient,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isMe ? 16 : 4),
-              bottomRight: Radius.circular(isMe ? 4 : 16),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              SelectableText(
-                text,
-                style: TextStyle(color: txtColor, fontSize: 15, height: 1.25),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(time, style: TextStyle(color: txtColor.withOpacity(0.85), fontSize: 11)),
-                  if (isMe) ...[
-                    const SizedBox(width: 4),
-                    Icon(Icons.check_rounded, size: 14, color: txtColor.withOpacity(0.9)),
-                  ]
-                ],
-              ),
-            ],
-          ),
+    final bubble = Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      decoration: BoxDecoration(
+        color: bg,
+        gradient: gradient,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMe ? 16 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 16),
         ),
+        border: isMe ? null : Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          SelectableText(
+            text,
+            style: TextStyle(color: txtColor, fontSize: 15, height: 1.25),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(time, style: TextStyle(color: txtColor.withOpacity(0.9), fontSize: 11)),
+              if (isMe) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.check_rounded, size: 14, color: txtColor.withOpacity(0.95)),
+              ],
+            ],
+          ),
+        ],
       ),
     );
+
+    if (!isMe) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: bubble,
+          ),
+        ),
+      );
+    }
+
+    return Align(alignment: Alignment.centerRight, child: bubble);
   }
 }
 
 class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
-  const _Composer({required this.controller, required this.onSend});
+  final ColorScheme cs;
+  const _Composer({required this.controller, required this.onSend, required this.cs});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return SafeArea(
       top: false,
       child: Padding(
@@ -272,16 +359,26 @@ class _Composer extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 5,
-                textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: 'Message...',
-                  prefixIcon: Icon(Icons.chat_bubble_outline_rounded),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: TextField(
+                    controller: controller,
+                    minLines: 1,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.newline,
+                    decoration: InputDecoration(
+                      hintText: 'Message...',
+                      prefixIcon: const Icon(Icons.chat_bubble_outline_rounded),
+                      filled: true,
+                      fillColor: cs.surface.withOpacity(0.6),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    ),
+                    onSubmitted: (_) => onSend(),
+                  ),
                 ),
-                onSubmitted: (_) => onSend(),
               ),
             ),
             const SizedBox(width: 8),

@@ -19,8 +19,8 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    final light = ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.light);
-    final dark = ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark);
+    final light = ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.light);
+    final dark = ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.dark);
 
     InputBorder roundedOutline(Color color) => OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
